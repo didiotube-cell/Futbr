@@ -1,0 +1,2209 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>FutCampeão App - Master Liga</title>
+  
+  <!-- PWA / App Mobile Metas -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FutCampeão">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#030712">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              400: '#4ade80',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              900: '#14532d',
+            },
+            darker: '#030712',
+            cardbg: '#0f172a'
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --sat: env(safe-area-inset-top);
+      --sab: env(safe-area-inset-bottom);
+      --sal: env(safe-area-inset-left);
+      --sar: env(safe-area-inset-right);
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      position: fixed;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      background-color: #030712;
+      color: #f3f4f6;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% -20%, #14532d 0%, #07111d 50%, #030712 100%);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pt-safe { padding-top: max(12px, var(--sat)); }
+    .pb-safe { padding-bottom: max(12px, var(--sab)); }
+    .bottom-nav-padding { padding-bottom: calc(65px + max(12px, var(--sab))); }
+
+    .app-scroll {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .bottom-sheet {
+      transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+      transform: translateY(100%);
+    }
+
+    .bottom-sheet.open {
+      transform: translateY(0%);
+    }
+
+    .nav-btn.active {
+      color: #22c55e;
+    }
+    .nav-btn.active i {
+      transform: translateY(-2px) scale(1.1);
+      filter: drop-shadow(0 4px 10px rgba(34, 197, 94, 0.5));
+    }
+
+    .glass-header {
+      background: rgba(3, 7, 18, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .glass-bottom {
+      background: rgba(8, 15, 28, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .active-press:active {
+      transform: scale(0.97);
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased">
+
+  <!-- TOP APP BAR MOBILE -->
+  <header class="glass-header pt-safe border-b border-slate-800/80 fixed top-0 left-0 right-0 z-30 px-4 pb-3 shadow-lg">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 bg-gradient-to-tr from-brand-600 to-brand-400 rounded-xl flex items-center justify-center text-slate-950 font-black shadow-md shadow-brand-500/30">
+          <i class="fa-solid fa-trophy text-base"></i>
+        </div>
+        <div>
+          <h1 class="text-xs font-black text-white tracking-wider flex items-center gap-1.5 uppercase">
+            FutCampeão <span class="bg-brand-500/15 text-brand-400 text-[9px] px-1.5 py-0.5 rounded-full border border-brand-500/30 font-bold">App</span>
+          </h1>
+          <p id="appSubHeader" class="text-[10px] font-semibold text-slate-400 truncate max-w-[140px] sm:max-w-none">Master Liga Custom</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <select id="tournamentSelect" onchange="switchTournament(this.value)" class="bg-slate-900 border border-slate-700/80 text-[11px] font-bold text-slate-200 rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-brand-500 max-w-[125px] truncate shadow-inner">
+        </select>
+        <button onclick="openNewTournamentModal()" class="w-8 h-8 rounded-xl bg-brand-600 hover:bg-brand-500 active-press text-slate-950 font-extrabold text-xs flex items-center justify-center shadow-lg shadow-brand-600/30">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN SCROLLABLE APP BODY -->
+  <main id="mainAppScroll" class="flex-1 app-scroll pt-[68px] bottom-nav-padding px-3.5 space-y-4">
+
+    <!-- Active Tournament Banner Card -->
+    <div id="tournamentInfoBar" class="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800/90 rounded-2xl p-3.5 flex items-center justify-between shadow-2xl relative overflow-hidden mt-2">
+      <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-brand-500/10 rounded-full blur-xl pointer-events-none"></div>
+      <div class="flex items-center gap-3 z-10">
+        <img id="tournamentLogoImg" src="" class="w-12 h-12 object-cover rounded-xl border border-slate-700/80 bg-slate-950 shadow">
+        <div>
+          <h2 id="tournamentTitle" class="text-xs font-black text-white leading-tight uppercase tracking-wide">FutCampeão</h2>
+          <p id="tournamentSubtitle" class="text-[10px] font-bold text-brand-400 mt-0.5">0 Times Cadastrados</p>
+        </div>
+      </div>
+      <div class="z-10 text-right">
+        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 text-[10px] font-extrabold">
+          <span class="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse"></span> Ativo
+        </span>
+      </div>
+    </div>
+
+    <!-- TAB 1: CLASSIFICAÇÃO (TABELA) -->
+    <section id="content-tabela" class="space-y-3">
+      <div class="flex justify-between items-center px-1">
+        <h3 class="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-list-ol text-brand-400"></i> Classificação
+        </h3>
+        <div class="flex items-center gap-3 text-[10px] font-bold">
+          <span class="flex items-center gap-1 text-slate-300"><span class="w-2.5 h-2.5 bg-brand-500 rounded"></span> G4</span>
+          <span class="flex items-center gap-1 text-slate-300"><span class="w-2.5 h-2.5 bg-red-500 rounded"></span> Z4</span>
+        </div>
+      </div>
+
+      <div class="bg-cardbg border border-slate-800/80 rounded-2xl overflow-hidden shadow-2xl">
+        <div class="overflow-x-auto no-scrollbar">
+          <table class="w-full text-left border-collapse text-[11px] whitespace-nowrap">
+            <thead>
+              <tr class="bg-slate-900/90 text-slate-400 font-extrabold text-[10px] border-b border-slate-800 tracking-wider uppercase">
+                <th class="py-2.5 px-2 text-center w-8">#</th>
+                <th class="py-2.5 px-3">Clube</th>
+                <th class="py-2.5 px-2 text-center font-black text-white bg-slate-900">P</th>
+                <th class="py-2.5 px-2 text-center">J</th>
+                <th class="py-2.5 px-2 text-center">V</th>
+                <th class="py-2.5 px-2 text-center">E</th>
+                <th class="py-2.5 px-2 text-center">D</th>
+                <th class="py-2.5 px-2 text-center">GP</th>
+                <th class="py-2.5 px-2 text-center">GC</th>
+                <th class="py-2.5 px-2 text-center">SG</th>
+                <th class="py-2.5 px-2 text-center">FASE</th>
+              </tr>
+            </thead>
+            <tbody id="standingsTableBody" class="divide-y divide-slate-800/60 text-slate-300 font-medium">
+            </tbody>
+          </table>
+        </div>
+        <div id="emptyStandingsMsg" class="hidden p-8 text-center text-slate-500 space-y-3">
+          <i class="fa-solid fa-shield-halved text-3xl text-slate-600"></i>
+          <p class="text-xs font-semibold text-slate-400">Nenhum time cadastrado nesta liga.</p>
+          <button onclick="switchTab('times')" class="text-xs bg-brand-600 text-slate-950 font-black px-4 py-2 rounded-xl active-press shadow-lg shadow-brand-600/20">Cadastrar Clubes</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: JOGOS & FASES -->
+    <section id="content-jogos" class="space-y-3 hidden">
+      <div class="flex justify-between items-center px-1">
+        <h3 class="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-futbol text-brand-400"></i> Partidas
+        </h3>
+        <div class="flex gap-1.5">
+          <button onclick="generateFixtures()" class="bg-brand-600 hover:bg-brand-500 text-slate-950 font-extrabold text-[10px] px-2.5 py-1.5 rounded-xl active-press flex items-center gap-1 shadow-md shadow-brand-600/20">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Gerar Jogos
+          </button>
+          <button onclick="generatePlayoffs()" class="bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-extrabold text-[10px] px-2.5 py-1.5 rounded-xl active-press flex items-center gap-1 shadow-md shadow-yellow-500/20">
+            <i class="fa-solid fa-trophy"></i> Mata-Mata
+          </button>
+        </div>
+      </div>
+
+      <!-- Segment Controls de Fases -->
+      <div class="flex bg-slate-900/90 border border-slate-800/80 rounded-2xl p-1 gap-1 shadow-inner">
+        <button onclick="switchStageView('classificacao')" id="stageBtn-classificacao" class="flex-1 py-2 text-[11px] font-extrabold rounded-xl bg-brand-500 text-slate-950 transition">Pontos Corridos</button>
+        <button onclick="switchStageView('semifinal')" id="stageBtn-semifinal" class="flex-1 py-2 text-[11px] font-extrabold rounded-xl text-slate-400 transition">Semis</button>
+        <button onclick="switchStageView('final')" id="stageBtn-final" class="flex-1 py-2 text-[11px] font-extrabold rounded-xl text-slate-400 transition">Final</button>
+      </div>
+
+      <!-- Navegador de Rodadas -->
+      <div id="roundNavContainer" class="flex items-center justify-between bg-cardbg border border-slate-800/80 rounded-2xl px-3 py-2 shadow-md">
+        <button onclick="changeRound(-1)" class="w-7 h-7 rounded-lg bg-slate-800 text-slate-200 active-press flex items-center justify-center text-xs">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <div class="flex flex-col items-center">
+          <span id="currentRoundLabel" class="font-extrabold text-white text-xs uppercase tracking-wide">Rodada 1</span>
+          <button onclick="goToCurrentActiveRound()" class="text-[9px] text-brand-400 font-extrabold flex items-center gap-1">
+            <i class="fa-solid fa-crosshairs"></i> Ir p/ Rodada Atual
+          </button>
+        </div>
+        <button onclick="changeRound(1)" class="w-7 h-7 rounded-lg bg-slate-800 text-slate-200 active-press flex items-center justify-center text-xs">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <div id="matchesContainer" class="space-y-3">
+      </div>
+    </section>
+
+    <!-- TAB 3: CLUBES & ELENCOS -->
+    <section id="content-times" class="space-y-3 hidden">
+      <div class="flex justify-between items-center px-1">
+        <h3 class="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-shield-halved text-brand-400"></i> Clubes Cadastrados
+        </h3>
+        <button onclick="openAddTeamModal()" class="bg-brand-600 text-slate-950 font-extrabold text-[11px] px-3 py-1.5 rounded-xl active-press flex items-center gap-1 shadow-md shadow-brand-600/20">
+          <i class="fa-solid fa-plus"></i> Novo Time
+        </button>
+      </div>
+
+      <div id="teamsGrid" class="space-y-3">
+      </div>
+    </section>
+
+    <!-- TAB 4: ESTATÍSTICAS (ARTILHARIA, CARTOES, DM) -->
+    <section id="content-estatisticas" class="space-y-3 hidden">
+      <div class="flex justify-between items-center px-1">
+        <h3 class="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-chart-simple text-brand-400"></i> Centro de Estatísticas
+        </h3>
+      </div>
+
+      <!-- Sub Tabs em Segment Button -->
+      <div class="flex bg-slate-900 border border-slate-800 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
+        <button onclick="switchStatsSubTab('artilharia')" id="statsSubTab-artilharia" class="px-3 py-2 text-[10px] font-extrabold rounded-xl bg-brand-500 text-slate-950 whitespace-nowrap">Artilharia</button>
+        <button onclick="switchStatsSubTab('assisten')" id="statsSubTab-assisten" class="px-3 py-2 text-[10px] font-extrabold rounded-xl text-slate-400 whitespace-nowrap">Assistências</button>
+        <button onclick="switchStatsSubTab('cartoes')" id="statsSubTab-cartoes" class="px-3 py-2 text-[10px] font-extrabold rounded-xl text-slate-400 whitespace-nowrap">Cartões</button>
+        <button onclick="switchStatsSubTab('suspen')" id="statsSubTab-suspen" class="px-3 py-2 text-[10px] font-extrabold rounded-xl text-slate-400 whitespace-nowrap">Suspensões</button>
+        <button onclick="switchStatsSubTab('dm')" id="statsSubTab-dm" class="px-3 py-2 text-[10px] font-extrabold rounded-xl text-slate-400 whitespace-nowrap">DM</button>
+      </div>
+
+      <!-- Sub Content 1: Artilharia -->
+      <div id="statsSection-artilharia" class="bg-cardbg border border-slate-800/80 rounded-2xl p-3 shadow-xl space-y-2">
+        <div id="dedicatedTopScorersList" class="space-y-2"></div>
+      </div>
+
+      <!-- Sub Content 2: Assistências -->
+      <div id="statsSection-assisten" class="bg-cardbg border border-slate-800/80 rounded-2xl p-3 shadow-xl space-y-2 hidden">
+        <div id="dedicatedTopAssistsList" class="space-y-2"></div>
+      </div>
+
+      <!-- Sub Content 3: Cartões -->
+      <div id="statsSection-cartoes" class="bg-cardbg border border-slate-800/80 rounded-2xl p-3 shadow-xl space-y-2 hidden">
+        <div id="cardsListContainer" class="space-y-2"></div>
+      </div>
+
+      <!-- Sub Content 4: Suspensões -->
+      <div id="statsSection-suspen" class="bg-cardbg border border-slate-800/80 rounded-2xl p-3 shadow-xl space-y-2 hidden">
+        <div class="text-[10px] text-slate-400 bg-slate-950/70 p-2 rounded-xl border border-slate-800/80 mb-2">
+          <i class="fa-solid fa-circle-info text-brand-400"></i> Regra: <b>2 amarelos</b> ou <b>1 vermelho</b> suspende por 1 partida. Cartões amarelos são <b>zerados nas Semifinais</b>.
+        </div>
+        <div id="suspendedPlayersList" class="space-y-2"></div>
+      </div>
+
+      <!-- Sub Content 5: DM -->
+      <div id="statsSection-dm" class="bg-cardbg border border-slate-800/80 rounded-2xl p-3 shadow-xl space-y-3 hidden">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+          <span class="text-[11px] font-bold text-slate-400">Atletas no Departamento Médico</span>
+          <button onclick="openAddInjuryModal()" class="bg-cyan-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-xl active-press">+ Lesão</button>
+        </div>
+        <div id="injuredPlayersList" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- TAB 5: AJUSTES & REGULAMENTO -->
+    <section id="content-ajustes" class="space-y-3.5 hidden">
+      <div class="flex justify-between items-center px-1">
+        <h3 class="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-gear text-brand-400"></i> Ajustes da Liga
+        </h3>
+      </div>
+
+      <div class="bg-cardbg border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-3">
+        <h4 class="font-bold text-xs text-white border-b border-slate-800 pb-2 flex items-center gap-1.5">
+          <i class="fa-solid fa-sliders text-brand-400"></i> Regulamento da Liga
+        </h4>
+        <form onsubmit="saveCustomRegulamento(event)" class="space-y-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-300 uppercase mb-1">Nome da Competição</label>
+            <input type="text" id="customTournName" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-300 uppercase mb-1">Formato</label>
+              <select id="customTournFormat" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none">
+                <option value="pontos_corridos_mata_mata">Grupos + Mata-Mata</option>
+                <option value="pontos_corridos">Apenas Pontos Corridos</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-300 uppercase mb-1">Turnos</label>
+              <select id="customTournTurns" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none">
+                <option value="1">Ida (1 Turno)</option>
+                <option value="2">Ida e Volta</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-300 uppercase mb-1">Logo / Escudo da Liga</label>
+            <div class="flex items-center gap-3">
+              <input type="file" id="regTournamentLogoInput" accept="image/*" onchange="previewTournamentLogoUpload(event)" class="w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-slate-800 file:text-slate-200 cursor-pointer">
+              <img id="regTournamentLogoPreview" src="" class="w-10 h-10 object-cover rounded-xl border border-slate-700 bg-slate-900">
+            </div>
+          </div>
+          <button type="submit" class="w-full bg-brand-600 text-slate-950 font-black text-xs py-2.5 rounded-xl active-press shadow-lg shadow-brand-600/20">Salvar Ajustes</button>
+        </form>
+      </div>
+
+      <div class="bg-cardbg border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-2.5">
+        <h4 class="font-bold text-xs text-white flex items-center gap-1.5">
+          <i class="fa-solid fa-database text-blue-400"></i> Backup & Restauração
+        </h4>
+        <button onclick="exportDataJSON()" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded-xl border border-slate-700/80 active-press flex items-center justify-center gap-2">
+          <i class="fa-solid fa-download text-brand-400"></i> Baixar Backup (JSON)
+        </button>
+        <div>
+          <input type="file" id="importFileInput" accept=".json" onchange="importDataJSON(event)" class="hidden">
+          <button onclick="document.getElementById('importFileInput').click()" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded-xl border border-slate-700/80 active-press flex items-center justify-center gap-2">
+            <i class="fa-solid fa-upload text-blue-400"></i> Importar Backup (JSON)
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-cardbg border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-2.5">
+        <h4 class="font-bold text-xs text-red-400 flex items-center gap-1.5">
+          <i class="fa-solid fa-triangle-exclamation"></i> Zona Perigosa
+        </h4>
+        <button onclick="resetCurrentTournamentData()" class="w-full bg-red-500/10 text-red-400 text-xs font-bold py-2 rounded-xl border border-red-500/20 active-press">
+          Zerar Jogos da Liga
+        </button>
+        <button onclick="confirmDeleteTournament()" class="w-full bg-red-600 text-white text-xs font-bold py-2 rounded-xl active-press shadow-lg shadow-red-600/20">
+          Excluir Esta Liga
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAVIGATION BAR NATIVA MOBILE -->
+  <nav class="glass-bottom fixed bottom-0 left-0 right-0 z-40 border-t border-slate-800/80 pb-safe pt-2">
+    <div class="flex items-center justify-around max-w-md mx-auto px-1">
+      <button onclick="switchTab('tabela')" id="nav-tabela" class="nav-btn active flex-1 flex flex-col items-center gap-1 text-slate-400 transition">
+        <i class="fa-solid fa-table-list text-lg transition-transform"></i>
+        <span class="text-[10px] font-bold tracking-tight">Tabela</span>
+      </button>
+
+      <button onclick="switchTab('jogos')" id="nav-jogos" class="nav-btn flex-1 flex flex-col items-center gap-1 text-slate-400 transition">
+        <i class="fa-solid fa-calendar-days text-lg transition-transform"></i>
+        <span class="text-[10px] font-bold tracking-tight">Jogos</span>
+      </button>
+
+      <button onclick="switchTab('times')" id="nav-times" class="nav-btn flex-1 flex flex-col items-center gap-1 text-slate-400 transition">
+        <i class="fa-solid fa-shield-halved text-lg transition-transform"></i>
+        <span class="text-[10px] font-bold tracking-tight">Clubes</span>
+      </button>
+
+      <button onclick="switchTab('estatisticas')" id="nav-estatisticas" class="nav-btn flex-1 flex flex-col items-center gap-1 text-slate-400 transition">
+        <i class="fa-solid fa-chart-simple text-lg transition-transform"></i>
+        <span class="text-[10px] font-bold tracking-tight">Estatísticas</span>
+      </button>
+
+      <button onclick="switchTab('ajustes')" id="nav-ajustes" class="nav-btn flex-1 flex flex-col items-center gap-1 text-slate-400 transition">
+        <i class="fa-solid fa-sliders text-lg transition-transform"></i>
+        <span class="text-[10px] font-bold tracking-tight">Ajustes</span>
+      </button>
+    </div>
+  </nav>
+
+
+  <!-- MODAIS EM ESTILO BOTTOM SHEET MOBILE -->
+  <div id="modalOverlay" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden transition-opacity" onclick="closeAllModals()"></div>
+
+  <!-- BOTTOM SHEET: NOTÍCIAS & COLETIVA -->
+  <div id="newsModal" class="bottom-sheet fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-800 rounded-t-3xl max-h-[88vh] flex flex-col shadow-2xl">
+    <div class="w-12 h-1 bg-slate-700 rounded-full mx-auto my-2.5"></div>
+    <div class="px-4 pb-3 border-b border-slate-800 flex justify-between items-center">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-newspaper text-yellow-400"></i>
+        <h3 id="newsModalHeadline" class="text-xs font-black text-white truncate max-w-[240px]">Jornal do Jogo</h3>
+      </div>
+      <button onclick="closeModal('newsModal')" class="w-7 h-7 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="p-4 app-scroll space-y-3 text-xs text-slate-300 pb-safe">
+      <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3 flex items-center justify-between text-center">
+        <div class="w-5/12 flex flex-col items-center">
+          <img id="newsHomeBadge" src="" class="w-11 h-11 object-cover rounded-full bg-slate-900 border border-slate-700 mb-1">
+          <span id="newsHomeName" class="font-bold text-white text-[11px] truncate max-w-full">Casa</span>
+          <span id="newsHomePos" class="text-[9px] font-extrabold text-brand-400">--</span>
+        </div>
+        <div class="w-2/12 flex flex-col items-center">
+          <span id="newsScoreBox" class="font-black text-base text-yellow-400">VS</span>
+          <span id="newsContextTag" class="text-[8px] uppercase font-black text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded-full mt-0.5">Jogo</span>
+        </div>
+        <div class="w-5/12 flex flex-col items-center">
+          <img id="newsAwayBadge" src="" class="w-11 h-11 object-cover rounded-full bg-slate-900 border border-slate-700 mb-1">
+          <span id="newsAwayName" class="font-bold text-white text-[11px] truncate max-w-full">Visitante</span>
+          <span id="newsAwayPos" class="text-[9px] font-extrabold text-blue-400">--</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-1">
+        <h5 class="text-[10px] font-black uppercase text-brand-400"><i class="fa-solid fa-magnifying-glass-chart"></i> Cenário & Situação na Tabela</h5>
+        <p id="newsTableContext" class="text-[11px] text-slate-300 leading-relaxed"></p>
+        <p id="newsPhaseContext" class="text-[11px] text-slate-400 leading-relaxed pt-1 mt-1 border-t border-slate-800/80"></p>
+      </div>
+
+      <div class="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2">
+        <h5 class="text-[10px] font-black uppercase text-brand-400"><i class="fa-solid fa-bullhorn"></i> Sala de Imprensa (Coletivas)</h5>
+        <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
+          <p class="text-[9px] font-bold text-brand-400 uppercase" id="newsHomeCoachTitle">Coletiva Casa:</p>
+          <p id="newsHomeInterview" class="italic text-[11px] text-slate-200"></p>
+        </div>
+        <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
+          <p class="text-[9px] font-bold text-blue-400 uppercase" id="newsAwayCoachTitle">Coletiva Visitante:</p>
+          <p id="newsAwayInterview" class="italic text-[11px] text-slate-200"></p>
+        </div>
+      </div>
+
+      <div class="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2">
+        <h5 class="text-[10px] font-black uppercase text-yellow-400"><i class="fa-solid fa-star"></i> Craque da Partida & Análise</h5>
+        <div id="newsSummaryDetails" class="text-[11px] space-y-1"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM SHEET: SÚMULA DA PARTIDA -->
+  <div id="matchDetailsModal" class="bottom-sheet fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-800 rounded-t-3xl max-h-[90vh] flex flex-col shadow-2xl">
+    <div class="w-12 h-1 bg-slate-700 rounded-full mx-auto my-2.5"></div>
+    <div class="px-4 pb-3 border-b border-slate-800 flex justify-between items-center">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-file-lines text-brand-400"></i>
+        <h3 class="text-xs font-black text-white uppercase">Súmula do Confronto</h3>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="autoSaveIndicator" class="text-[9px] font-extrabold text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded-full border border-brand-500/20 hidden">Salvo</span>
+        <button onclick="closeModal('matchDetailsModal')" class="w-7 h-7 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+
+    <div class="p-4 app-scroll space-y-3 pb-safe">
+      <div class="flex items-center justify-between bg-slate-950 p-2.5 rounded-2xl border border-slate-800">
+        <span class="text-xs font-bold text-slate-300">Status:</span>
+        <select id="matchModalStatusSelect" onchange="autoSaveCurrentMatch()" class="bg-slate-900 border border-slate-700 text-xs font-bold text-white rounded-xl px-2.5 py-1 focus:outline-none">
+          <option value="a_realizar">⏳ A Realizar</option>
+          <option value="em_andamento">🟢 Em Andamento</option>
+          <option value="encerrado">🏁 Encerrado</option>
+        </select>
+      </div>
+
+      <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-3 rounded-2xl border border-slate-800 flex items-center justify-around text-center">
+        <div class="flex flex-col items-center gap-1 w-1/3">
+          <img id="matchModalHomeBadge" src="" class="w-12 h-12 object-cover rounded-full bg-slate-900 border border-slate-700">
+          <span id="matchModalHomeName" class="font-bold text-[11px] text-white truncate max-w-full">Casa</span>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <input type="number" id="matchModalHomeScore" min="0" value="0" oninput="autoSaveCurrentMatch()" class="w-11 h-11 bg-slate-950 border border-slate-700 rounded-xl text-center text-lg font-black text-white focus:outline-none focus:border-brand-500">
+          <span class="text-xs font-extrabold text-slate-500">x</span>
+          <input type="number" id="matchModalAwayScore" min="0" value="0" oninput="autoSaveCurrentMatch()" class="w-11 h-11 bg-slate-950 border border-slate-700 rounded-xl text-center text-lg font-black text-white focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div class="flex flex-col items-center gap-1 w-1/3">
+          <img id="matchModalAwayBadge" src="" class="w-12 h-12 object-cover rounded-full bg-slate-900 border border-slate-700">
+          <span id="matchModalAwayName" class="font-bold text-[11px] text-white truncate max-w-full">Visitante</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+        <h4 class="text-[10px] font-black uppercase text-brand-400">Registrar Ocorrência</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <select id="eventTeamSelect" onchange="updateEventPlayerOptions()" class="bg-slate-900 border border-slate-800 rounded-xl px-2 py-2 text-xs text-white focus:outline-none"></select>
+          <select id="eventTypeSelect" class="bg-slate-900 border border-slate-800 rounded-xl px-2 py-2 text-xs text-white focus:outline-none">
+            <option value="gol">⚽ Gol</option>
+            <option value="gol_contra">g Gol Contra</option>
+            <option value="assistencia">👟 Assistência</option>
+            <option value="amarelo">🟨 Amarelo</option>
+            <option value="vermelho">🟥 Vermelho</option>
+          </select>
+          <select id="eventPlayerSelect" class="bg-slate-900 border border-slate-800 rounded-xl px-2 py-2 text-xs text-white focus:outline-none"></select>
+        </div>
+        <button onclick="addMatchEvent()" class="w-full bg-slate-800 text-white text-xs font-bold py-2 rounded-xl active-press border border-slate-700">
+          + Salvar Evento
+        </button>
+      </div>
+
+      <div class="space-y-1.5">
+        <h4 class="text-[10px] font-black uppercase text-slate-400">Eventos Cadastrados</h4>
+        <div id="matchEventsList" class="space-y-1"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM SHEET: CADASTRAR/EDITAR CLUBE -->
+  <div id="teamModal" class="bottom-sheet fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-800 rounded-t-3xl p-4 space-y-3">
+    <div class="w-12 h-1 bg-slate-700 rounded-full mx-auto my-1"></div>
+    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+      <h3 id="teamModalTitle" class="text-xs font-black text-white uppercase">Cadastrar Clube</h3>
+      <button onclick="closeModal('teamModal')" class="w-7 h-7 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="teamForm" onsubmit="saveTeam(event)" class="space-y-3 pb-safe">
+      <input type="hidden" id="teamModalId">
+      <div>
+        <label class="block text-[10px] font-bold text-slate-300 uppercase mb-1">Nome do Clube</label>
+        <input type="text" id="teamModalName" required placeholder="Ex: Estação FC" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+      </div>
+      <div>
+        <label class="block text-[10px] font-bold text-slate-300 uppercase mb-1">Escudo / Logo</label>
+        <input type="file" id="teamModalBadgeInput" accept="image/*" onchange="previewBadgeUpload(event)" class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-slate-800 file:text-slate-200">
+        <div class="mt-2 flex items-center gap-2">
+          <span class="text-[10px] text-slate-400 font-medium">Prévia:</span>
+          <img id="teamBadgePreview" src="" class="w-10 h-10 object-cover rounded-xl border border-slate-700 bg-slate-950">
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" onclick="closeModal('teamModal')" class="px-3.5 py-2 text-xs font-bold bg-slate-800 text-slate-300 rounded-xl">Cancelar</button>
+        <button type="submit" class="px-4 py-2 text-xs font-black bg-brand-600 text-slate-950 rounded-xl active-press shadow">Salvar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- BOTTOM SHEET: ELENCO DO TIME -->
+  <div id="rosterModal" class="bottom-sheet fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-800 rounded-t-3xl max-h-[90vh] flex flex-col p-4 space-y-3">
+    <div class="w-12 h-1 bg-slate-700 rounded-full mx-auto my-1"></div>
+    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+      <div class="flex items-center gap-2">
+        <img id="rosterModalBadge" src="" class="w-7 h-7 object-cover rounded-full bg-slate-950 border border-slate-700">
+        <h3 id="rosterModalTitle" class="text-xs font-black text-white uppercase truncate max-w-[200px]">Elenco</h3>
+      </div>
+      <button onclick="closeModal('rosterModal')" class="w-7 h-7 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <form onsubmit="addPlayerToRoster(event)" class="space-y-2 bg-slate-950 p-2.5 rounded-2xl border border-slate-800">
+      <input type="hidden" id="editingPlayerId">
+      <div class="flex gap-2">
+        <input type="text" id="newPlayerName" required placeholder="Nome do Atleta" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none">
+        <input type="number" id="newPlayerNumber" placeholder="Nº" class="w-14 bg-slate-900 border border-slate-800 rounded-xl px-2 py-1.5 text-xs text-white text-center focus:outline-none">
+      </div>
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <input type="file" id="newPlayerPhotoInput" accept="image/*" onchange="previewPlayerPhotoUpload(event)" class="hidden">
+          <button type="button" onclick="document.getElementById('newPlayerPhotoInput').click()" class="bg-slate-800 text-slate-300 text-[10px] px-2.5 py-1.5 rounded-xl border border-slate-700 flex items-center gap-1">
+            <i class="fa-solid fa-camera"></i> Foto
+          </button>
+          <img id="newPlayerPhotoPreview" src="" class="w-7 h-7 object-cover rounded-full border border-slate-700 bg-slate-900">
+        </div>
+        <button type="submit" id="playerSubmitBtn" class="bg-brand-600 text-slate-950 px-3 py-1.5 rounded-xl text-xs font-black active-press shadow">+ Atleta</button>
+      </div>
+    </form>
+
+    <div class="flex-1 app-scroll space-y-2 pr-1 pb-safe" id="rosterListContainer"></div>
+  </div>
+
+  <!-- BOTTOM SHEET: NOVO TORNEIO -->
+  <div id="tournamentModal" class="bottom-sheet fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-800 rounded-t-3xl p-4 space-y-3">
+    <div class="w-12 h-1 bg-slate-700 rounded-full mx-auto my-1"></div>
+    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+      <h3 class="text-xs font-black text-white uppercase">Criar Nova Liga</h3>
+      <button onclick="closeModal('tournamentModal')" class="w-7 h-7 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="tournamentForm" onsubmit="saveNewTournament(event)" class="space-y-3 pb-safe">
+      <div>
+        <label class="block text-[10px] font-bold text-slate-300 uppercase mb-1">Nome do Torneio / Liga</label>
+        <input type="text" id="tournamentModalName" required placeholder="Ex: Master Liga 2026" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+      </div>
+      <div>
+        <label class="block text-[10px] font-bold text-slate-300 uppercase mb-1">Logo da Liga</label>
+        <input type="file" id="tournamentModalLogoInput" accept="image/*" onchange="previewTournamentLogoUpload(event)" class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-slate-800 file:text-slate-200">
+        <div class="mt-2 flex items-center gap-2">
+          <span class="text-[10px] text-slate-400 font-medium">Prévia:</span>
+          <img id="tournamentLogoPreview" src="" class="w-10 h-10 object-cover rounded-xl border border-slate-700 bg-slate-950">
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" onclick="closeModal('tournamentModal')" class="px-3.5 py-2 text-xs font-bold bg-slate-800 text-slate-300 rounded-xl">Cancelar</button>
+        <button type="submit" class="px-4 py-2 text-xs font-black bg-brand-600 text-slate-950 rounded-xl active-press shadow">Criar Liga</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- BOTTOM SHEET: LESÃO (DM) -->
+  <div id="injuryModal" class="bottom-sheet fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-800 rounded-t-3xl p-4 space-y-3">
+    <div class="w-12 h-1 bg-slate-700 rounded-full mx-auto my-1"></div>
+    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+      <h3 class="text-xs font-black text-white uppercase">Registrar Atleta no DM</h3>
+      <button onclick="closeModal('injuryModal')" class="w-7 h-7 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="saveInjury(event)" class="space-y-3 pb-safe">
+      <div>
+        <label class="block text-[10px] font-bold text-slate-300 uppercase mb-1">Clube</label>
+        <select id="injuryTeamSelect" onchange="updateInjuryPlayerOptions()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"></select>
+      </div>
+      <div>
+        <label class="block text-[10px] font-bold text-slate-300 uppercase mb-1">Jogador</label>
+        <select id="injuryPlayerSelect" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"></select>
+      </div>
+      <div>
+        <label class="block text-[10px] font-bold text-slate-300 uppercase mb-1">Diagnóstico / Lesão</label>
+        <input type="text" id="injuryDesc" required placeholder="Ex: Torção no tornozelo" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
+      </div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" onclick="closeModal('injuryModal')" class="px-3.5 py-2 text-xs font-bold bg-slate-800 text-slate-300 rounded-xl">Cancelar</button>
+        <button type="submit" class="px-4 py-2 text-xs font-black bg-cyan-600 text-white rounded-xl active-press shadow">Salvar Lesão</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- CROP CANVAS MODAL -->
+  <div id="badgeCropModal" class="bottom-sheet fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-800 rounded-t-3xl p-4 space-y-3 flex flex-col items-center">
+    <div class="w-12 h-1 bg-slate-700 rounded-full mx-auto my-1"></div>
+    <div class="w-full flex justify-between items-center border-b border-slate-800 pb-2">
+      <h3 class="text-xs font-black text-white uppercase flex items-center gap-1.5"><i class="fa-solid fa-crop-simple text-brand-400"></i> Ajustar Imagem</h3>
+      <button onclick="closeModal('badgeCropModal')" class="w-7 h-7 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="relative w-40 h-40 bg-slate-950 rounded-2xl overflow-hidden flex items-center justify-center border border-slate-800 touch-none select-none my-2" id="cropCanvasArea">
+      <canvas id="cropCanvas" width="200" height="200" class="absolute inset-0 w-full h-full"></canvas>
+      <div class="absolute inset-0 rounded-full border-2 border-brand-500/80 pointer-events-none shadow-[0_0_0_9999px_rgba(3,7,18,0.75)]"></div>
+    </div>
+
+    <div class="w-full space-y-1">
+      <div class="flex justify-between text-[10px] text-slate-400 font-bold">
+        <span>Zoom</span>
+        <span id="zoomLevelVal">100%</span>
+      </div>
+      <input type="range" id="cropZoomSlider" min="0.5" max="3" step="0.05" value="1" class="w-full accent-brand-500 bg-slate-800 rounded-lg h-1.5">
+    </div>
+
+    <div class="w-full flex justify-end gap-2 pt-2 border-t border-slate-800 pb-safe">
+      <button type="button" onclick="closeModal('badgeCropModal')" class="px-3.5 py-2 text-xs font-bold bg-slate-800 text-slate-300 rounded-xl">Cancelar</button>
+      <button type="button" onclick="applyBadgeCrop()" class="px-4 py-2 text-xs font-black bg-brand-600 text-slate-950 rounded-xl active-press shadow">Concluir</button>
+    </div>
+  </div>
+
+
+  <!-- SCRIPT LÓGICA COMPLETA -->
+  <script>
+    const STORAGE_KEY = 'futcampeao_app_mobile_v4';
+    
+    const DEFAULT_PLAYER_PHOTO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%231e293b'/><circle cx='50' cy='38' r='18' fill='%2364748b'/><path d='M20 85c0-16.568 13.432-30 30-30s30 13.432 30 30z' fill='%2364748b'/></svg>";
+    const DEFAULT_BADGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%230f172a'/><path d='M50 15L85 30v25c0 20-15 32-35 35-20-3-35-15-35-35V30z' fill='%2316a34a'/><text x='50' y='58' font-size='24' font-weight='bold' fill='white' text-anchor='middle'>FC</text></svg>";
+    const DEFAULT_TOURNAMENT_LOGO = DEFAULT_BADGE;
+
+    let appState = {
+      activeTournamentId: null,
+      tournaments: []
+    };
+
+    let activeRoundView = 1;
+    let activeStageView = 'classificacao';
+    let activeStatsSubTab = 'artilharia';
+    let editingMatchId = null;
+    let activeRosterTeamId = null;
+    let activeMatchEvents = [];
+
+    let cropImg = new Image();
+    let cropState = { scale: 1, x: 0, y: 0 };
+    let isDraggingCrop = false;
+    let startDragPos = { x: 0, y: 0 };
+    let activeCropTarget = 'team';
+
+    window.onload = function() {
+      loadDataFromStorage();
+      if (appState.tournaments.length === 0) {
+        createDefaultTournament();
+      }
+      if (!appState.activeTournamentId && appState.tournaments.length > 0) {
+        appState.activeTournamentId = appState.tournaments[0].id;
+      }
+
+      const t = getCurrentTournament();
+      if (t) {
+        autoDetectCurrentRound(t);
+      }
+
+      renderTournamentSelector();
+      renderCurrentTournament();
+      initCropEvents();
+    };
+
+    function loadDataFromStorage() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) appState = JSON.parse(stored);
+      } catch (e) {
+        console.error("Erro ao carregar dados", e);
+      }
+    }
+
+    function saveDataToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (e) {
+        console.error("Erro ao salvar", e);
+      }
+    }
+
+    function getCurrentTournament() {
+      return appState.tournaments.find(t => t.id === appState.activeTournamentId);
+    }
+
+    function autoDetectCurrentRound(t) {
+      if (!t || !Array.isArray(t.matches) || t.matches.length === 0) {
+        activeRoundView = 1;
+        return;
+      }
+
+      const rounds = [...new Set(t.matches.map(m => Number(m.round)).filter(Number.isFinite))].sort((a, b) => a - b);
+      if (!rounds.length) {
+        activeRoundView = 1;
+        return;
+      }
+
+      const nextRound = rounds.find(round => t.matches.some(m =>
+        Number(m.round) === round && !(m.status === 'encerrado' || m.played === true)
+      ));
+      activeRoundView = nextRound ?? rounds[rounds.length - 1];
+      t.savedRound = activeRoundView;
+    }
+
+    function goToCurrentActiveRound() {
+      const t = getCurrentTournament();
+      if (!t) return;
+      autoDetectCurrentRound(t);
+      saveDataToStorage();
+      renderMatches();
+    }
+
+    function createDefaultTournament() {
+      const defaultId = 'tourn_' + Date.now();
+      const defaultTournament = {
+        id: defaultId,
+        name: "CAMPEONATO REGIONAL DE CACULÉ",
+        logo: DEFAULT_TOURNAMENT_LOGO,
+        format: "pontos_corridos_mata_mata",
+        turns: 1,
+        savedRound: 1,
+        teams: [
+          {
+            id: 'estacao',
+            name: 'ESTAÇÃO',
+            badge: DEFAULT_BADGE,
+            players: [
+              {id: 'p1', name: 'NETAO', number: '10', photo: DEFAULT_PLAYER_PHOTO},
+              {id: 'p2', name: 'GUTINHO', number: '7', photo: DEFAULT_PLAYER_PHOTO},
+              {id: 'p3', name: 'ALANE', number: '9', photo: DEFAULT_PLAYER_PHOTO},
+              {id: 'p4', name: 'GEOVANE XO', number: '5', photo: DEFAULT_PLAYER_PHOTO},
+              {id: 'p5', name: 'PATRICIO', number: '1', photo: DEFAULT_PLAYER_PHOTO}
+            ]
+          },
+          {
+            id: 'alto_cruzeiro',
+            name: 'ALTO DO CRUZEIRO',
+            badge: DEFAULT_BADGE,
+            players: [
+              {id: 'ac1', name: 'GABRYEL', number: '10', photo: DEFAULT_PLAYER_PHOTO},
+              {id: 'ac2', name: 'PEDRO', number: '9', photo: DEFAULT_PLAYER_PHOTO},
+              {id: 'ac3', name: 'GEOVANAO', number: '3', photo: DEFAULT_PLAYER_PHOTO}
+            ]
+          },
+          {
+            id: 'quati',
+            name: 'QUATI',
+            badge: DEFAULT_BADGE,
+            players: [
+              {id: 'q1', name: 'MARCELO', number: '10', photo: DEFAULT_PLAYER_PHOTO},
+              {id: 'q2', name: 'VICTOR', number: '7', photo: DEFAULT_PLAYER_PHOTO}
+            ]
+          },
+          {
+            id: 'saida_licinio',
+            name: 'SAÍDA DE LICINIO',
+            badge: DEFAULT_BADGE,
+            players: [
+              {id: 'sl1', name: 'DANIEL', number: '9', photo: DEFAULT_PLAYER_PHOTO}
+            ]
+          }
+        ],
+        matches: [],
+        semis: [],
+        final: [],
+        injuries: []
+      };
+      appState.tournaments.push(defaultTournament);
+      appState.activeTournamentId = defaultId;
+      saveDataToStorage();
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+
+      const activeSec = document.getElementById(`content-${tabName}`);
+      const activeBtn = document.getElementById(`nav-${tabName}`);
+      if (activeSec) activeSec.classList.remove('hidden');
+      if (activeBtn) activeBtn.classList.add('active');
+
+      document.getElementById('mainAppScroll').scrollTop = 0;
+
+      if (tabName === 'tabela') renderStandings();
+      if (tabName === 'jogos') renderMatches();
+      if (tabName === 'times') renderTeams();
+      if (tabName === 'estatisticas') renderAllStats();
+      if (tabName === 'ajustes') loadRegulamentoForm();
+    }
+
+    function switchStatsSubTab(subTab) {
+      activeStatsSubTab = subTab;
+      ['artilharia', 'assisten', 'cartoes', 'suspen', 'dm'].forEach(s => {
+        const btn = document.getElementById(`statsSubTab-${s}`);
+        const sec = document.getElementById(`statsSection-${s}`);
+        if (s === subTab) {
+          btn.className = "px-3 py-2 text-[10px] font-extrabold rounded-xl bg-brand-500 text-slate-950 whitespace-nowrap";
+          sec.classList.remove('hidden');
+        } else {
+          btn.className = "px-3 py-2 text-[10px] font-extrabold rounded-xl text-slate-400 whitespace-nowrap";
+          sec.classList.add('hidden');
+        }
+      });
+      renderAllStats();
+    }
+
+    function renderAllStats() {
+      renderDedicatedArtilharia();
+      renderDedicatedAssists();
+      renderDedicatedCards();
+      renderSuspensions();
+      renderInjuries();
+    }
+
+    function renderTournamentSelector() {
+      const select = document.getElementById('tournamentSelect');
+      select.innerHTML = '';
+      appState.tournaments.forEach(t => {
+        const option = document.createElement('option');
+        option.value = t.id;
+        option.textContent = t.name;
+        if (t.id === appState.activeTournamentId) option.selected = true;
+        select.appendChild(option);
+      });
+    }
+
+    function switchTournament(id) {
+      appState.activeTournamentId = id;
+      const t = getCurrentTournament();
+      if (t) autoDetectCurrentRound(t);
+      saveDataToStorage();
+      renderCurrentTournament();
+    }
+
+    function renderCurrentTournament() {
+      const t = getCurrentTournament();
+      if (!t) return;
+
+      document.getElementById('tournamentTitle').textContent = t.name;
+      document.getElementById('tournamentSubtitle').textContent = `${t.teams.length} Clubes Cadastrados`;
+      document.getElementById('tournamentLogoImg').src = t.logo || DEFAULT_TOURNAMENT_LOGO;
+      document.getElementById('appSubHeader').textContent = t.name;
+
+      renderStandings();
+      renderMatches();
+      renderTeams();
+      renderAllStats();
+      loadRegulamentoForm();
+    }
+
+    function openNewTournamentModal() {
+      document.getElementById('tournamentModalName').value = '';
+      document.getElementById('tournamentLogoPreview').src = DEFAULT_TOURNAMENT_LOGO;
+      openModal('tournamentModal');
+    }
+
+    function saveNewTournament(e) {
+      e.preventDefault();
+      const name = document.getElementById('tournamentModalName').value.trim();
+      const logoSrc = document.getElementById('tournamentLogoPreview').src;
+      if (!name) return;
+
+      const newId = 'tourn_' + Date.now();
+      const newTourn = { id: newId, name: name, logo: logoSrc, format: 'pontos_corridos_mata_mata', turns: 1, savedRound: 1, teams: [], matches: [], semis: [], final: [], injuries: [] };
+      appState.tournaments.push(newTourn);
+      appState.activeTournamentId = newId;
+
+      saveDataToStorage();
+      renderTournamentSelector();
+      renderCurrentTournament();
+      closeModal('tournamentModal');
+    }
+
+    function loadRegulamentoForm() {
+      const t = getCurrentTournament();
+      if (!t) return;
+      document.getElementById('customTournName').value = t.name;
+      document.getElementById('customTournFormat').value = t.format || 'pontos_corridos_mata_mata';
+      document.getElementById('customTournTurns').value = t.turns || 1;
+      document.getElementById('regTournamentLogoPreview').src = t.logo || DEFAULT_TOURNAMENT_LOGO;
+    }
+
+    function saveCustomRegulamento(e) {
+      e.preventDefault();
+      const t = getCurrentTournament();
+      if (!t) return;
+
+      t.name = document.getElementById('customTournName').value.trim();
+      t.format = document.getElementById('customTournFormat').value;
+      t.turns = parseInt(document.getElementById('customTournTurns').value) || 1;
+      t.logo = document.getElementById('regTournamentLogoPreview').src;
+
+      saveDataToStorage();
+      renderTournamentSelector();
+      renderCurrentTournament();
+    }
+
+    function calculateStandings() {
+      const t = getCurrentTournament();
+      if (!t) return [];
+
+      const stats = {};
+      t.teams.forEach(team => {
+        stats[team.id] = {
+          id: team.id,
+          name: team.name,
+          badge: team.badge || DEFAULT_BADGE,
+          points: 0, played: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0
+        };
+      });
+
+      if (t.matches) {
+        t.matches.forEach(m => {
+          const isEncerrado = m.status === 'encerrado' || (!m.status && m.played);
+          if (isEncerrado && stats[m.homeTeamId] && stats[m.awayTeamId]) {
+            const home = stats[m.homeTeamId];
+            const away = stats[m.awayTeamId];
+
+            home.played++; away.played++;
+            home.goalsFor += m.homeScore; home.goalsAgainst += m.awayScore;
+            away.goalsFor += m.awayScore; away.goalsAgainst += m.homeScore;
+
+            if (m.homeScore > m.awayScore) {
+              home.wins++; home.points += 3; away.losses++;
+            } else if (m.homeScore < m.awayScore) {
+              away.wins++; away.points += 3; home.losses++;
+            } else {
+              home.draws++; home.points += 1; away.draws++; away.points += 1;
+            }
+          }
+        });
+      }
+
+      Object.values(stats).forEach(s => {
+        s.goalDifference = s.goalsFor - s.goalsAgainst;
+      });
+
+      return Object.values(stats).sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+        return b.goalsFor - a.goalsFor;
+      });
+    }
+
+    function renderStandings() {
+      const tbody = document.getElementById('standingsTableBody');
+      const emptyMsg = document.getElementById('emptyStandingsMsg');
+      const standings = calculateStandings();
+
+      tbody.innerHTML = '';
+      if (standings.length === 0) {
+        emptyMsg.classList.remove('hidden');
+        return;
+      }
+      emptyMsg.classList.add('hidden');
+
+      standings.forEach((team, index) => {
+        const pos = index + 1;
+        let badgeHtml = pos <= 4 
+          ? `<span class="inline-flex items-center justify-center w-5 h-5 bg-brand-500 text-slate-950 font-black rounded-lg text-[10px]">${pos}</span>`
+          : pos >= 5 && pos <= 8 
+          ? `<span class="inline-flex items-center justify-center w-5 h-5 bg-red-500 text-white font-black rounded-lg text-[10px]">${pos}</span>`
+          : `<span class="font-bold text-slate-500 text-[10px]">${pos}</span>`;
+
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-slate-800/40";
+        tr.innerHTML = `
+          <td class="py-2.5 px-2 text-center">${badgeHtml}</td>
+          <td class="py-2.5 px-3 font-bold text-white flex items-center gap-2">
+            <img src="${team.badge}" class="w-6 h-6 object-cover rounded-full bg-slate-900 border border-slate-700" onerror="this.src='${DEFAULT_BADGE}'">
+            <span class="truncate max-w-[100px] text-[11px]">${team.name}</span>
+          </td>
+          <td class="py-2.5 px-2 text-center font-black text-brand-400 bg-slate-900/60 text-xs">${team.points}</td>
+          <td class="py-2.5 px-2 text-center text-slate-300">${team.played}</td>
+          <td class="py-2.5 px-2 text-center text-slate-300">${team.wins}</td>
+          <td class="py-2.5 px-2 text-center text-slate-300">${team.draws}</td>
+          <td class="py-2.5 px-2 text-center text-slate-300">${team.losses}</td>
+          <td class="py-2.5 px-2 text-center text-slate-400">${team.goalsFor}</td>
+          <td class="py-2.5 px-2 text-center text-slate-400">${team.goalsAgainst}</td>
+          <td class="py-2.5 px-2 text-center font-bold ${team.goalDifference > 0 ? 'text-brand-400' : team.goalDifference < 0 ? 'text-red-400' : 'text-slate-400'}">${team.goalDifference > 0 ? '+' : ''}${team.goalDifference}</td>
+          <td class="py-2.5 px-2 text-center">${getTeamRecentForm(team.id, 3).map(r => `<span class="inline-block w-3.5 h-3.5 text-[8px] font-black leading-3 font-mono rounded ${r === 'V' ? 'bg-emerald-500/20 text-emerald-400' : r === 'E' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'}">${r}</span>`).join('') || '—'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function getTeamRecentForm(teamId, limit = 3) {
+      const t = getCurrentTournament();
+      const finished = (t?.matches || []).filter(m =>
+        (m.status === 'encerrado' || m.played) && (m.homeTeamId === teamId || m.awayTeamId === teamId)
+      ).sort((a,b) => (a.round || 0) - (b.round || 0));
+      return finished.slice(-limit).map(m => {
+        const isHome = m.homeTeamId === teamId;
+        const gf = Number(isHome ? m.homeScore : m.awayScore) || 0;
+        const ga = Number(isHome ? m.awayScore : m.homeScore) || 0;
+        return gf > ga ? 'V' : gf < ga ? 'D' : 'E';
+      });
+    }
+
+    function switchStageView(stage) {
+      activeStageView = stage;
+      ['classificacao', 'semifinal', 'final'].forEach(s => {
+        const btn = document.getElementById(`stageBtn-${s}`);
+        btn.className = s === stage 
+          ? "flex-1 py-2 text-[11px] font-extrabold rounded-xl bg-brand-500 text-slate-950 transition"
+          : "flex-1 py-2 text-[11px] font-extrabold rounded-xl text-slate-400 transition";
+      });
+
+      const roundNav = document.getElementById('roundNavContainer');
+      if (stage === 'classificacao') roundNav.classList.remove('hidden');
+      else roundNav.classList.add('hidden');
+
+      renderMatches();
+    }
+
+    function generateFixtures() {
+      const t = getCurrentTournament();
+      if (!t || t.teams.length < 2) {
+        alert("Cadastre pelo menos 2 clubes.");
+        return;
+      }
+      if (t.matches && t.matches.length > 0 && !confirm("Deseja substituir a tabela atual por um novo calendário?")) return;
+
+      const teams = [...t.teams];
+      if (teams.length % 2 !== 0) teams.push({ id: 'BYE', name: 'Folga' });
+
+      const totalTeams = teams.length;
+      const rounds = totalTeams - 1;
+      const half = totalTeams / 2;
+      const matches = [];
+      let matchCounter = 1;
+
+      for (let round = 0; round < rounds; round++) {
+        for (let i = 0; i < half; i++) {
+          const home = teams[i];
+          const away = teams[totalTeams - 1 - i];
+          if (home.id !== 'BYE' && away.id !== 'BYE') {
+            matches.push({
+              id: 'm_' + (matchCounter++),
+              round: round + 1,
+              homeTeamId: home.id,
+              awayTeamId: away.id,
+              homeScore: 0,
+              awayScore: 0,
+              status: 'a_realizar',
+              played: false,
+              events: []
+            });
+          }
+        }
+        teams.splice(1, 0, teams.pop());
+      }
+
+      if (t.turns === 2) {
+        const len = matches.length;
+        for (let i = 0; i < len; i++) {
+          const m = matches[i];
+          matches.push({
+            id: 'm_' + (matchCounter++),
+            round: m.round + rounds,
+            homeTeamId: m.awayTeamId,
+            awayTeamId: m.homeTeamId,
+            homeScore: 0, awayScore: 0, status: 'a_realizar', played: false, events: []
+          });
+        }
+      }
+
+      t.matches = matches;
+      t.semis = []; t.final = [];
+      t.savedRound = 1;
+      activeRoundView = 1;
+      saveDataToStorage();
+      switchStageView('classificacao');
+    }
+
+    function generatePlayoffs() {
+      const t = getCurrentTournament();
+      if (!t || t.teams.length < 4) {
+        alert("Necessário ter no mínimo 4 times.");
+        return;
+      }
+
+      const standings = calculateStandings();
+      if (standings.length < 4) return;
+
+      t.semis = [
+        { id: 'semi_1', homeTeamId: standings[0].id, awayTeamId: standings[3].id, homeScore: 0, awayScore: 0, status: 'a_realizar', played: false, events: [] },
+        { id: 'semi_2', homeTeamId: standings[1].id, awayTeamId: standings[2].id, homeScore: 0, awayScore: 0, status: 'a_realizar', played: false, events: [] }
+      ];
+
+      t.final = [
+        { id: 'final_1', homeTeamId: null, awayTeamId: null, homeScore: 0, awayScore: 0, status: 'a_realizar', played: false, events: [] }
+      ];
+
+      saveDataToStorage();
+      switchStageView('semifinal');
+    }
+
+    function changeRound(delta) {
+      activeRoundView += delta;
+      const t = getCurrentTournament();
+      if (t) {
+        t.savedRound = activeRoundView;
+        saveDataToStorage();
+      }
+      renderMatches();
+    }
+
+    function changeMatchStatus(matchId, newStatus) {
+      const t = getCurrentTournament();
+      let match = null;
+      if (activeStageView === 'classificacao') match = t.matches.find(m => m.id === matchId);
+      else if (activeStageView === 'semifinal') match = t.semis.find(m => m.id === matchId);
+      else if (activeStageView === 'final') match = t.final.find(m => m.id === matchId);
+
+      if (!match) return;
+      match.status = newStatus;
+      match.played = (newStatus === 'encerrado');
+
+      if (activeStageView === 'classificacao') autoDetectCurrentRound(t);
+      if (activeStageView === 'semifinal') checkAndUpdateFinalists();
+
+      saveDataToStorage();
+      renderMatches();
+      renderStandings();
+      renderAllStats();
+    }
+
+    function checkAndUpdateFinalists() {
+      const t = getCurrentTournament();
+      if (!t || !t.semis || t.semis.length < 2 || !t.final || !t.final.length) return;
+
+      const s1 = t.semis[0];
+      const s2 = t.semis[1];
+
+      if ((s1.status === 'encerrado' || s1.played) && (s2.status === 'encerrado' || s2.played)) {
+        const w1 = s1.homeScore > s1.awayScore ? s1.homeTeamId : s1.awayTeamId;
+        const w2 = s2.homeScore > s2.awayScore ? s2.homeTeamId : s2.awayTeamId;
+
+        if (w1 && w2) {
+          t.final[0].homeTeamId = w1;
+          t.final[0].awayTeamId = w2;
+          saveDataToStorage();
+        }
+      }
+    }
+
+    function renderMatches() {
+      const container = document.getElementById('matchesContainer');
+      const t = getCurrentTournament();
+      container.innerHTML = '';
+      if (!t) return;
+
+      let currentList = [];
+      if (activeStageView === 'classificacao') {
+        if (!t.matches || t.matches.length === 0) {
+          container.innerHTML = `<div class="p-6 bg-cardbg rounded-2xl text-center text-slate-500 text-xs">Nenhum jogo gerado na fase classificatória.</div>`;
+          document.getElementById('currentRoundLabel').textContent = 'Sem Rodadas';
+          return;
+        }
+
+        const maxRound = Math.max(...t.matches.map(m => m.round));
+        if (activeRoundView > maxRound) activeRoundView = maxRound;
+        if (activeRoundView < 1) activeRoundView = 1;
+
+        document.getElementById('currentRoundLabel').textContent = `Rodada ${activeRoundView} / ${maxRound}`;
+        currentList = t.matches.filter(m => m.round === activeRoundView);
+
+      } else if (activeStageView === 'semifinal') {
+        if (!t.semis || !t.semis.length) {
+          container.innerHTML = `<div class="p-6 bg-cardbg rounded-2xl text-center text-slate-500 text-xs">Semifinais não geradas.</div>`;
+          return;
+        }
+        currentList = t.semis;
+      } else if (activeStageView === 'final') {
+        if (!t.final || !t.final.length || !t.final[0].homeTeamId) {
+          container.innerHTML = `<div class="p-6 bg-cardbg rounded-2xl text-center text-slate-500 text-xs">Aguardando definição dos finalistas.</div>`;
+          return;
+        }
+        currentList = t.final;
+      }
+
+      currentList.forEach(m => {
+        const home = t.teams.find(x => x.id === m.homeTeamId) || { name: 'A Definir', badge: DEFAULT_BADGE };
+        const away = t.teams.find(x => x.id === m.awayTeamId) || { name: 'A Definir', badge: DEFAULT_BADGE };
+        const status = m.status || (m.played ? 'encerrado' : 'a_realizar');
+
+        const card = document.createElement('div');
+        card.className = "bg-cardbg border border-slate-800/80 rounded-2xl p-3 shadow-xl space-y-2.5";
+        card.innerHTML = `
+          <div class="flex items-center justify-between text-[10px] text-slate-400 border-b border-slate-800/60 pb-1.5">
+            <span class="font-bold text-slate-300 uppercase">${activeStageView === 'classificacao' ? 'Rodada ' + m.round : activeStageView === 'semifinal' ? 'Semifinal' : 'Final'}</span>
+            <select onchange="changeMatchStatus('${m.id}', this.value)" class="text-[10px] font-bold rounded-lg px-2 py-0.5 border border-slate-700 bg-slate-950 ${status === 'encerrado' ? 'text-brand-400' : status === 'em_andamento' ? 'text-yellow-400' : 'text-slate-400'}">
+              <option value="a_realizar" ${status === 'a_realizar' ? 'selected' : ''}>⏳ A Realizar</option>
+              <option value="em_andamento" ${status === 'em_andamento' ? 'selected' : ''}>🟢 Ao Vivo</option>
+              <option value="encerrado" ${status === 'encerrado' ? 'selected' : ''}>🏁 Fim</option>
+            </select>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div class="flex flex-col items-center w-5/12 text-center">
+              <img src="${home.badge}" class="w-10 h-10 object-cover rounded-full bg-slate-900 border border-slate-700 mb-1" onerror="this.src='${DEFAULT_BADGE}'">
+              <span class="font-bold text-white text-[11px] truncate max-w-full">${home.name}</span>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              <span class="text-xl font-black text-white">${status !== 'a_realizar' ? m.homeScore : '-'}</span>
+              <span class="text-[10px] font-bold text-slate-600">x</span>
+              <span class="text-xl font-black text-white">${status !== 'a_realizar' ? m.awayScore : '-'}</span>
+            </div>
+
+            <div class="flex flex-col items-center w-5/12 text-center">
+              <img src="${away.badge}" class="w-10 h-10 object-cover rounded-full bg-slate-900 border border-slate-700 mb-1" onerror="this.src='${DEFAULT_BADGE}'">
+              <span class="font-bold text-white text-[11px] truncate max-w-full">${away.name}</span>
+            </div>
+          </div>
+
+          <div class="flex gap-1.5 pt-1 border-t border-slate-800/60">
+            <button onclick="openMatchDetailsModal('${m.id}')" class="flex-1 bg-slate-900 text-slate-200 text-[11px] font-bold py-2 rounded-xl active-press flex items-center justify-center gap-1 border border-slate-800">
+              <i class="fa-solid fa-pen-to-square text-brand-400"></i> Súmula
+            </button>
+            <button onclick="openNewsModal('${m.id}')" class="bg-yellow-500/10 text-yellow-400 text-[11px] font-bold px-3 py-2 rounded-xl active-press border border-yellow-500/20">
+              <i class="fa-solid fa-newspaper"></i> Notícias
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function openNewsModal(matchId) {
+      const t = getCurrentTournament();
+      let match = t.matches.find(m => m.id === matchId) || (t.semis && t.semis.find(m => m.id === matchId)) || (t.final && t.final.find(m => m.id === matchId));
+      if (!match) return;
+
+      const standings = calculateStandings();
+      const homePos = standings.findIndex(s => s.id === match.homeTeamId) + 1;
+      const awayPos = standings.findIndex(s => s.id === match.awayTeamId) + 1;
+
+      const home = t.teams.find(x => x.id === match.homeTeamId) || { name: 'Casa', badge: DEFAULT_BADGE, players: [] };
+      const away = t.teams.find(x => x.id === match.awayTeamId) || { name: 'Visitante', badge: DEFAULT_BADGE, players: [] };
+
+      document.getElementById('newsHomeBadge').src = home.badge;
+      document.getElementById('newsHomeName').textContent = home.name;
+      document.getElementById('newsHomePos').textContent = homePos > 0 ? `${homePos}º` : '--';
+
+      document.getElementById('newsAwayBadge').src = away.badge;
+      document.getElementById('newsAwayName').textContent = away.name;
+      document.getElementById('newsAwayPos').textContent = awayPos > 0 ? `${awayPos}º` : '--';
+
+      const isEncerrado = match.status === 'encerrado' || match.played;
+      document.getElementById('newsScoreBox').textContent = isEncerrado ? `${match.homeScore} x ${match.awayScore}` : 'VS';
+
+      const maxRound = t.matches && t.matches.length ? Math.max(...t.matches.map(m => m.round)) : 1;
+      const currentR = match.round || 1;
+      const remainingGames = Math.max(0, maxRound - currentR);
+      const maxPossiblePointsHome = (standings.find(s => s.id === home.id)?.points || 0) + (remainingGames * 3);
+      const g4CutoffPoints = standings.length >= 4 ? standings[3].points : 0;
+      const homeEliminated = remainingGames === 0 && homePos > 4 || (maxPossiblePointsHome < g4CutoffPoints && homePos > 4);
+
+      const maxPossiblePointsAway = (standings.find(s => s.id === away.id)?.points || 0) + (remainingGames * 3);
+      const awayEliminated = remainingGames === 0 && awayPos > 4 || (maxPossiblePointsAway < g4CutoffPoints && awayPos > 4);
+
+      const homePlayer = home.players && home.players.length ? home.players[Math.floor(Math.random() * home.players.length)].name : 'Capitão';
+      const awayPlayer = away.players && away.players.length ? away.players[Math.floor(Math.random() * away.players.length)].name : 'Capitão';
+
+      document.getElementById('newsHomeCoachTitle').textContent = `Zona Mista - ${homePlayer} (${home.name}):`;
+      document.getElementById('newsAwayCoachTitle').textContent = `Zona Mista - ${awayPlayer} (${away.name}):`;
+
+      let bestPlayer = "Atuação Coletiva";
+      let matchScorers = [];
+      if (match.events && match.events.length) {
+        match.events.forEach(ev => {
+          if (ev.type === 'gol' || ev.type === 'assistencia') {
+            const teamObj = t.teams.find(x => x.id === ev.teamId);
+            const playerObj = teamObj ? teamObj.players.find(p => p.id === ev.playerId) : null;
+            if (playerObj) matchScorers.push(`${playerObj.name} (${teamObj.name})`);
+          }
+        });
+      }
+      if (matchScorers.length > 0) {
+        bestPlayer = matchScorers[Math.floor(Math.random() * matchScorers.length)];
+      }
+
+      const preScenarios = [
+        `Duelo de seis pontos! ${home.name} (${homePos}º) recebe o ${away.name} (${awayPos}º) em partida que promete agitar a parte de cima da tabela.`,
+        `Clima de decisão! Enquanto o ${home.name} luta para se firmar no G4, o ${away.name} precisa vencer para não se complicar na classificação.`,
+        `Confronto regional cheio de rivalidade. As torcidas prometem lotar o estádio.`
+      ];
+
+      if (!isEncerrado) {
+        document.getElementById('newsModalHeadline').textContent = `Pré-Jogo: ${home.name} x ${away.name}`;
+        document.getElementById('newsTableContext').textContent = preScenarios[Math.floor(Math.random() * preScenarios.length)];
+        document.getElementById('newsPhaseContext').textContent = homeEliminated ? `Alerta: O ${home.name} cumpre tabela sem chances de G4.` : `Situação: Clubes vivos na luta pelo mata-mata.`;
+        document.getElementById('newsHomeInterview').textContent = `"A semana foi forte. Vamos impor nosso ritmo em casa!"`;
+        document.getElementById('newsAwayInterview').textContent = `"Viemos preparados para buscar os 3 pontos."`;
+        document.getElementById('newsSummaryDetails').innerHTML = `<p class="text-slate-500 italic">Aguardando o apito inicial.</p>`;
+      } else {
+        const hs = match.homeScore;
+        const as = match.awayScore;
+        document.getElementById('newsModalHeadline').textContent = `Fim de Jogo: ${home.name} ${hs}x${as} ${away.name}`;
+        document.getElementById('newsTableContext').textContent = hs > as ? `Vitória do ${home.name} por ${hs} a ${as}!` : hs < as ? `Vitória visitante do ${away.name} por ${as} a ${hs}!` : `Empate em ${hs}x${hs}.`;
+        document.getElementById('newsHomeInterview').textContent = `"Foco total no objetivo da temporada."`;
+        document.getElementById('newsAwayInterview').textContent = `"Seguimos trabalhando forte."`;
+        document.getElementById('newsPhaseContext').textContent = `Partida encerrada com sucesso.`;
+        document.getElementById('newsSummaryDetails').innerHTML = `
+          <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
+            <p class="text-[10px] font-black text-yellow-400 uppercase"><i class="fa-solid fa-medal"></i> Melhor em Campo:</p>
+            <p class="text-xs font-bold text-white">${bestPlayer}</p>
+          </div>
+        `;
+      }
+
+      openModal('newsModal');
+    }
+
+    function openMatchDetailsModal(matchId) {
+      editingMatchId = matchId;
+      const t = getCurrentTournament();
+      let match = t.matches.find(m => m.id === matchId) || (t.semis && t.semis.find(m => m.id === matchId)) || (t.final && t.final.find(m => m.id === matchId));
+      if (!match) return;
+
+      const home = t.teams.find(x => x.id === match.homeTeamId) || { name: 'Casa', badge: DEFAULT_BADGE };
+      const away = t.teams.find(x => x.id === match.awayTeamId) || { name: 'Visitante', badge: DEFAULT_BADGE };
+
+      document.getElementById('matchModalHomeBadge').src = home.badge;
+      document.getElementById('matchModalHomeName').textContent = home.name;
+      document.getElementById('matchModalAwayBadge').src = away.badge;
+      document.getElementById('matchModalAwayName').textContent = away.name;
+
+      document.getElementById('matchModalHomeScore').value = match.homeScore || 0;
+      document.getElementById('matchModalAwayScore').value = match.awayScore || 0;
+      document.getElementById('matchModalStatusSelect').value = match.status || (match.played ? 'encerrado' : 'a_realizar');
+
+      const teamSelect = document.getElementById('eventTeamSelect');
+      teamSelect.innerHTML = `<option value="${home.id}">${home.name}</option><option value="${away.id}">${away.name}</option>`;
+
+      activeMatchEvents = match.events ? [...match.events] : [];
+      updateEventPlayerOptions();
+      renderMatchEventsList();
+
+      openModal('matchDetailsModal');
+    }
+
+    function autoSaveCurrentMatch() {
+      if (!editingMatchId) return;
+      const t = getCurrentTournament();
+      let match = t.matches.find(m => m.id === editingMatchId) || (t.semis && t.semis.find(m => m.id === editingMatchId)) || (t.final && t.final.find(m => m.id === editingMatchId));
+      if (!match) return;
+
+      match.homeScore = parseInt(document.getElementById('matchModalHomeScore').value) || 0;
+      match.awayScore = parseInt(document.getElementById('matchModalAwayScore').value) || 0;
+      match.status = document.getElementById('matchModalStatusSelect').value;
+      match.played = (match.status === 'encerrado');
+      match.events = activeMatchEvents;
+
+      if (activeStageView === 'semifinal') checkAndUpdateFinalists();
+
+      saveDataToStorage();
+      renderMatches();
+      renderStandings();
+      renderAllStats();
+
+      const ind = document.getElementById('autoSaveIndicator');
+      ind.classList.remove('hidden');
+      setTimeout(() => ind.classList.add('hidden'), 1500);
+    }
+
+    function updateEventPlayerOptions() {
+      const teamId = document.getElementById('eventTeamSelect').value;
+      const playerSelect = document.getElementById('eventPlayerSelect');
+      playerSelect.innerHTML = '';
+
+      const t = getCurrentTournament();
+      const team = t.teams.find(x => x.id === teamId);
+
+      if (team && team.players && team.players.length) {
+        team.players.forEach(p => {
+          playerSelect.innerHTML += `<option value="${p.id}">${p.name} ${p.number ? '(#'+p.number+')' : ''}</option>`;
+        });
+      } else {
+        playerSelect.innerHTML = `<option value="">(Sem atletas)</option>`;
+      }
+    }
+
+    function addMatchEvent() {
+      const teamId = document.getElementById('eventTeamSelect').value;
+      const type = document.getElementById('eventTypeSelect').value;
+      const playerId = document.getElementById('eventPlayerSelect').value;
+      if (!playerId) return;
+
+      activeMatchEvents.push({ id: 'ev_' + Date.now(), teamId, playerId, type });
+
+      if (type === 'gol' || type === 'gol_contra') {
+        const t = getCurrentTournament();
+        let match = t.matches.find(m => m.id === editingMatchId) || (t.semis && t.semis.find(m => m.id === editingMatchId)) || (t.final && t.final.find(m => m.id === editingMatchId));
+        if (match) {
+          const scoringTeam = type === 'gol_contra' ? (teamId === match.homeTeamId ? match.awayTeamId : match.homeTeamId) : teamId;
+          if (scoringTeam === match.homeTeamId) {
+            document.getElementById('matchModalHomeScore').value = (parseInt(document.getElementById('matchModalHomeScore').value) || 0) + 1;
+          } else {
+            document.getElementById('matchModalAwayScore').value = (parseInt(document.getElementById('matchModalAwayScore').value) || 0) + 1;
+          }
+        }
+      }
+
+      renderMatchEventsList();
+      autoSaveCurrentMatch();
+    }
+
+    function removeMatchEvent(eventId) {
+      activeMatchEvents = activeMatchEvents.filter(e => e.id !== eventId);
+      renderMatchEventsList();
+      autoSaveCurrentMatch();
+    }
+
+    function renderMatchEventsList() {
+      const container = document.getElementById('matchEventsList');
+      const t = getCurrentTournament();
+      container.innerHTML = '';
+
+      if (!activeMatchEvents.length) {
+        container.innerHTML = `<p class="text-[11px] text-slate-500 py-1">Nenhum evento registrado.</p>`;
+        return;
+      }
+
+      activeMatchEvents.forEach(ev => {
+        const team = t.teams.find(x => x.id === ev.teamId);
+        const player = team ? team.players.find(p => p.id === ev.playerId) : null;
+        let icon = ev.type === 'gol' ? '⚽' : ev.type === 'gol_contra' ? 'g' : ev.type === 'assistencia' ? '👟' : ev.type === 'amarelo' ? '🟨' : '🟥';
+
+        const div = document.createElement('div');
+        div.className = "flex items-center justify-between p-2 bg-slate-950 rounded-xl text-xs border border-slate-800";
+        div.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span>${icon}</span>
+            <span class="font-bold text-white text-[11px]">${player ? player.name : 'Atleta'}</span>
+            <span class="text-[9px] text-slate-500">(${team ? team.name : ''})</span>
+          </div>
+          <button onclick="removeMatchEvent('${ev.id}')" class="text-red-400 p-1"><i class="fa-solid fa-xmark text-xs"></i></button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function renderTeams() {
+      const container = document.getElementById('teamsGrid');
+      const t = getCurrentTournament();
+      container.innerHTML = '';
+
+      if (!t || !t.teams.length) {
+        container.innerHTML = `<div class="p-6 bg-cardbg rounded-2xl text-center text-slate-500 text-xs">Nenhum clube cadastrado.</div>`;
+        return;
+      }
+
+      t.teams.forEach(team => {
+        const card = document.createElement('div');
+        card.className = "bg-cardbg border border-slate-800/80 rounded-2xl p-3 flex items-center justify-between shadow-xl";
+        card.innerHTML = `
+          <div class="flex items-center gap-3">
+            <img src="${team.badge}" class="w-11 h-11 object-cover rounded-xl bg-slate-900 border border-slate-700" onerror="this.src='${DEFAULT_BADGE}'">
+            <div>
+              <h4 class="font-black text-white text-xs leading-tight">${team.name}</h4>
+              <span class="text-[10px] text-slate-400 font-bold">${team.players ? team.players.length : 0} Jogadores</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="openRosterModal('${team.id}')" class="bg-slate-900 text-brand-400 font-bold text-[11px] px-2.5 py-1.5 rounded-xl border border-slate-800 active-press">
+              <i class="fa-solid fa-users"></i> Elenco
+            </button>
+            <button onclick="openEditTeamModal('${team.id}')" class="w-7 h-7 rounded-xl bg-slate-900 text-slate-400 flex items-center justify-center border border-slate-800"><i class="fa-solid fa-pen text-xs"></i></button>
+            <button onclick="confirmDeleteTeam('${team.id}')" class="w-7 h-7 rounded-xl bg-slate-900 text-red-400 flex items-center justify-center border border-slate-800"><i class="fa-solid fa-trash text-xs"></i></button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function openAddTeamModal() {
+      document.getElementById('teamModalId').value = '';
+      document.getElementById('teamModalName').value = '';
+      document.getElementById('teamBadgePreview').src = DEFAULT_BADGE;
+      document.getElementById('teamModalTitle').textContent = 'Cadastrar Clube';
+      openModal('teamModal');
+    }
+
+    function openEditTeamModal(teamId) {
+      const t = getCurrentTournament();
+      const team = t.teams.find(x => x.id === teamId);
+      if (!team) return;
+
+      document.getElementById('teamModalId').value = team.id;
+      document.getElementById('teamModalName').value = team.name;
+      document.getElementById('teamBadgePreview').src = team.badge || DEFAULT_BADGE;
+      document.getElementById('teamModalTitle').textContent = 'Editar Clube';
+      openModal('teamModal');
+    }
+
+    function saveTeam(e) {
+      e.preventDefault();
+      const id = document.getElementById('teamModalId').value;
+      const name = document.getElementById('teamModalName').value.trim();
+      const badgeSrc = document.getElementById('teamBadgePreview').src;
+      const t = getCurrentTournament();
+
+      if (!name || !t) return;
+
+      if (id) {
+        const team = t.teams.find(x => x.id === id);
+        if (team) { team.name = name; team.badge = badgeSrc; }
+      } else {
+        t.teams.push({ id: 'team_' + Date.now(), name: name, badge: badgeSrc, players: [] });
+      }
+
+      saveDataToStorage();
+      renderTeams();
+      renderStandings();
+      closeModal('teamModal');
+    }
+
+    function confirmDeleteTeam(teamId) {
+      const t = getCurrentTournament();
+      const team = t.teams.find(x => x.id === teamId);
+      if (!team) return;
+
+      if (confirm(`Excluir "${team.name}"?`)) {
+        t.teams = t.teams.filter(x => x.id !== teamId);
+        saveDataToStorage();
+        renderTeams();
+        renderStandings();
+      }
+    }
+
+    function openRosterModal(teamId) {
+      activeRosterTeamId = teamId;
+      const t = getCurrentTournament();
+      const team = t.teams.find(x => x.id === teamId);
+      if (!team) return;
+
+      document.getElementById('rosterModalTitle').textContent = team.name;
+      document.getElementById('rosterModalBadge').src = team.badge || DEFAULT_BADGE;
+      document.getElementById('newPlayerPhotoPreview').src = DEFAULT_PLAYER_PHOTO;
+      document.getElementById('editingPlayerId').value = '';
+      document.getElementById('newPlayerName').value = '';
+      document.getElementById('newPlayerNumber').value = '';
+      document.getElementById('playerSubmitBtn').textContent = '+ Atleta';
+
+      renderRosterList(team);
+      openModal('rosterModal');
+    }
+
+    function renderRosterList(team) {
+      const container = document.getElementById('rosterListContainer');
+      container.innerHTML = '';
+
+      if (!team.players || !team.players.length) {
+        container.innerHTML = `<p class="text-xs text-center text-slate-500 py-4">Nenhum jogador no elenco.</p>`;
+        return;
+      }
+
+      team.players.forEach(p => {
+        const item = document.createElement('div');
+        item.className = "flex items-center justify-between p-2 bg-slate-950 border border-slate-800 rounded-xl";
+        item.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <img src="${p.photo || DEFAULT_PLAYER_PHOTO}" class="w-8 h-8 object-cover rounded-full bg-slate-900 border border-slate-700" onerror="this.src='${DEFAULT_PLAYER_PHOTO}'">
+            <div>
+              <p class="text-xs font-bold text-white">${p.name}</p>
+              <span class="text-[9px] text-brand-400 font-semibold">${p.number ? 'Camisa #' + p.number : 'Sem número'}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="editPlayerFromRoster('${p.id}')" class="text-slate-400 hover:text-white p-1.5"><i class="fa-solid fa-pen text-xs"></i></button>
+            <button onclick="removePlayerFromRoster('${p.id}')" class="text-red-400 p-1.5"><i class="fa-solid fa-trash text-xs"></i></button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function editPlayerFromRoster(playerId) {
+      const t = getCurrentTournament();
+      const team = t.teams.find(x => x.id === activeRosterTeamId);
+      if (!team) return;
+      const player = team.players.find(p => p.id === playerId);
+      if (!player) return;
+
+      document.getElementById('editingPlayerId').value = player.id;
+      document.getElementById('newPlayerName').value = player.name;
+      document.getElementById('newPlayerNumber').value = player.number || '';
+      document.getElementById('newPlayerPhotoPreview').src = player.photo || DEFAULT_PLAYER_PHOTO;
+      document.getElementById('playerSubmitBtn').textContent = 'Salvar Edição';
+    }
+
+    function addPlayerToRoster(e) {
+      e.preventDefault();
+      const editingId = document.getElementById('editingPlayerId').value;
+      const name = document.getElementById('newPlayerName').value.trim();
+      const number = document.getElementById('newPlayerNumber').value;
+      const photoSrc = document.getElementById('newPlayerPhotoPreview').src;
+      const t = getCurrentTournament();
+      const team = t.teams.find(x => x.id === activeRosterTeamId);
+
+      if (!name || !team) return;
+      if (!team.players) team.players = [];
+
+      if (editingId) {
+        const player = team.players.find(p => p.id === editingId);
+        if (player) {
+          player.name = name;
+          player.number = number ? parseInt(number) : '';
+          player.photo = photoSrc;
+        }
+      } else {
+        team.players.push({ id: 'p_' + Date.now(), name, number: number ? parseInt(number) : '', photo: photoSrc });
+      }
+
+      saveDataToStorage();
+      renderRosterList(team);
+      renderTeams();
+      
+      document.getElementById('editingPlayerId').value = '';
+      document.getElementById('newPlayerName').value = '';
+      document.getElementById('newPlayerNumber').value = '';
+      document.getElementById('newPlayerPhotoPreview').src = DEFAULT_PLAYER_PHOTO;
+      document.getElementById('playerSubmitBtn').textContent = '+ Atleta';
+    }
+
+    function removePlayerFromRoster(playerId) {
+      const t = getCurrentTournament();
+      const team = t.teams.find(x => x.id === activeRosterTeamId);
+      if (!team) return;
+
+      team.players = team.players.filter(p => p.id !== playerId);
+      saveDataToStorage();
+      renderRosterList(team);
+      renderTeams();
+    }
+
+    function renderDedicatedArtilharia() {
+      const t = getCurrentTournament();
+      if (!t) return;
+      const stats = {};
+
+      t.teams.forEach(team => {
+        if (team.players) {
+          team.players.forEach(p => {
+            stats[p.id] = { name: p.name, number: p.number, photo: p.photo || DEFAULT_PLAYER_PHOTO, teamName: team.name, teamBadge: team.badge || DEFAULT_BADGE, goals: 0 };
+          });
+        }
+      });
+
+      const acc = (list) => list && list.forEach(m => m.events && m.events.forEach(ev => { if (stats[ev.playerId] && ev.type === 'gol') stats[ev.playerId].goals++; }));
+      acc(t.matches); acc(t.semis); acc(t.final);
+
+      const top = Object.values(stats).filter(p => p.goals > 0).sort((a,b) => b.goals - a.goals);
+      const container = document.getElementById('dedicatedTopScorersList');
+      container.innerHTML = top.length ? '' : `<p class="text-xs text-slate-500 text-center py-4">Nenhum gol registrado.</p>`;
+
+      top.forEach((p, index) => {
+        container.innerHTML += `
+          <div class="flex items-center justify-between p-2 bg-slate-950 rounded-xl border border-slate-800">
+            <div class="flex items-center gap-2.5">
+              <span class="font-black text-xs text-yellow-400 w-4 text-center">${index + 1}º</span>
+              <img src="${p.photo}" class="w-8 h-8 object-cover rounded-full bg-slate-900 border border-slate-700" onerror="this.src='${DEFAULT_PLAYER_PHOTO}'">
+              <div>
+                <p class="text-xs font-bold text-white">${p.name}</p>
+                <p class="text-[9px] text-slate-400">${p.teamName}</p>
+              </div>
+            </div>
+            <span class="font-black text-xs text-yellow-400 bg-yellow-500/10 px-2.5 py-1 rounded-lg border border-yellow-500/20">${p.goals} Gols</span>
+          </div>
+        `;
+      });
+    }
+
+    function renderDedicatedAssists() {
+      const t = getCurrentTournament();
+      if (!t) return;
+      const stats = {};
+
+      t.teams.forEach(team => {
+        if (team.players) {
+          team.players.forEach(p => {
+            stats[p.id] = { name: p.name, number: p.number, photo: p.photo || DEFAULT_PLAYER_PHOTO, teamName: team.name, teamBadge: team.badge || DEFAULT_BADGE, assists: 0 };
+          });
+        }
+      });
+
+      const acc = (list) => list && list.forEach(m => m.events && m.events.forEach(ev => { if (stats[ev.playerId] && ev.type === 'assistencia') stats[ev.playerId].assists++; }));
+      acc(t.matches); acc(t.semis); acc(t.final);
+
+      const top = Object.values(stats).filter(p => p.assists > 0).sort((a,b) => b.assists - a.assists);
+      const container = document.getElementById('dedicatedTopAssistsList');
+      container.innerHTML = top.length ? '' : `<p class="text-xs text-slate-500 text-center py-4">Nenhuma assistência registrada.</p>`;
+
+      top.forEach((p, index) => {
+        container.innerHTML += `
+          <div class="flex items-center justify-between p-2 bg-slate-950 rounded-xl border border-slate-800">
+            <div class="flex items-center gap-2.5">
+              <span class="font-black text-xs text-slate-400 w-4 text-center">${index + 1}º</span>
+              <img src="${p.photo}" class="w-8 h-8 object-cover rounded-full bg-slate-900 border border-slate-700" onerror="this.src='${DEFAULT_PLAYER_PHOTO}'">
+              <div>
+                <p class="text-xs font-bold text-white">${p.name}</p>
+                <p class="text-[9px] text-slate-400">${p.teamName}</p>
+              </div>
+            </div>
+            <span class="font-black text-xs text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-lg border border-blue-500/20">${p.assists} Assist.</span>
+          </div>
+        `;
+      });
+    }
+
+    /**
+     * Função auxiliar unificada para calcular o status e os cartões ativos por jogador,
+     * respeitando a regra de zerar nas semifinais e resetar após a suspensão cumprida.
+     */
+    function computePlayerCardAndSuspensionStates() {
+      const t = getCurrentTournament();
+      if (!t) return {};
+
+      const playerStatus = {};
+      t.teams.forEach(team => {
+        if (team.players) {
+          team.players.forEach(p => {
+            playerStatus[p.id] = {
+              playerId: p.id,
+              name: p.name,
+              photo: p.photo || DEFAULT_PLAYER_PHOTO,
+              teamId: team.id,
+              teamName: team.name,
+              yellows: 0,
+              reds: 0,
+              suspended: false,
+              suspensionReason: ''
+            };
+          });
+        }
+      });
+
+      const processMatchesList = (matchesList) => {
+        if (!matchesList || !matchesList.length) return;
+        matchesList.forEach(match => {
+          const isEncerrado = match.status === 'encerrado' || match.played;
+          
+          // Verificar se cumpriram suspensão nesta partida encerrada
+          Object.values(playerStatus).forEach(pStat => {
+            if (pStat.suspended && isEncerrado && (match.homeTeamId === pStat.teamId || match.awayTeamId === pStat.teamId)) {
+              pStat.suspended = false;
+              pStat.yellows = 0;
+              pStat.reds = 0;
+              pStat.suspensionReason = '';
+            }
+          });
+
+          // Computar novos cartões
+          if (match.events && isEncerrado) {
+            match.events.forEach(ev => {
+              const pStat = playerStatus[ev.playerId];
+              if (!pStat) return;
+
+              if (ev.type === 'amarelo') {
+                pStat.yellows++;
+                if (pStat.yellows >= 2) {
+                  pStat.suspended = true;
+                  pStat.suspensionReason = '2 Cartões Amarelos';
+                }
+              } else if (ev.type === 'vermelho') {
+                pStat.reds++;
+                pStat.suspended = true;
+                pStat.suspensionReason = 'Cartão Vermelho';
+              }
+            });
+          }
+        });
+      };
+
+      // 1. Fase de pontos corridos
+      const groupMatches = [...(t.matches || [])].sort((a, b) => (a.round || 0) - (b.round || 0));
+      processMatchesList(groupMatches);
+
+      // 2. Zerar cartões amarelos e suspensões nas Semifinais
+      if (t.semis && t.semis.length > 0) {
+        Object.values(playerStatus).forEach(pStat => {
+          pStat.yellows = 0;
+          pStat.suspended = false;
+          pStat.suspensionReason = '';
+        });
+
+        processMatchesList(t.semis);
+        processMatchesList(t.final);
+      }
+
+      return playerStatus;
+    }
+
+    function renderDedicatedCards() {
+      const playerStatus = computePlayerCardAndSuspensionStates();
+      const list = Object.values(playerStatus).filter(p => (p.yellows > 0 || p.reds > 0)).sort((a,b) => (b.yellows + b.reds) - (a.yellows + a.reds));
+      
+      const container = document.getElementById('cardsListContainer');
+      container.innerHTML = list.length ? '' : `<p class="text-xs text-slate-500 text-center py-4">Nenhum cartão aplicado.</p>`;
+
+      list.forEach((p, index) => {
+        container.innerHTML += `
+          <div class="flex items-center justify-between p-2 bg-slate-950 rounded-xl border border-slate-800">
+            <div class="flex items-center gap-2.5">
+              <span class="font-black text-xs text-slate-500 w-4 text-center">${index + 1}º</span>
+              <img src="${p.photo}" class="w-8 h-8 object-cover rounded-full bg-slate-900 border border-slate-700" onerror="this.src='${DEFAULT_PLAYER_PHOTO}'">
+              <div>
+                <p class="text-xs font-bold text-white">${p.name}</p>
+                <p class="text-[9px] text-slate-400">${p.teamName}</p>
+              </div>
+            </div>
+            <div class="flex gap-1">
+              ${p.yellows ? `<span class="text-[10px] font-bold text-yellow-400 bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">🟨 ${p.yellows}</span>` : ''}
+              ${p.reds ? `<span class="text-[10px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">🟥 ${p.reds}</span>` : ''}
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function renderSuspensions() {
+      const playerStatus = computePlayerCardAndSuspensionStates();
+      const suspendedList = Object.values(playerStatus).filter(p => p.suspended);
+      
+      const container = document.getElementById('suspendedPlayersList');
+      container.innerHTML = suspendedList.length ? '' : `<p class="text-xs text-slate-500 text-center py-4">Nenhum atleta suspenso no momento.</p>`;
+
+      suspendedList.forEach(p => {
+        container.innerHTML += `
+          <div class="flex items-center justify-between p-2 bg-red-500/10 border border-red-500/20 rounded-xl">
+            <div class="flex items-center gap-2.5">
+              <img src="${p.photo}" class="w-8 h-8 object-cover rounded-full bg-slate-900 border border-slate-700" onerror="this.src='${DEFAULT_PLAYER_PHOTO}'">
+              <div>
+                <p class="text-xs font-bold text-white">${p.name}</p>
+                <p class="text-[9px] text-red-400 font-semibold">${p.teamName} • ${p.suspensionReason}</p>
+              </div>
+            </div>
+            <span class="font-black text-[10px] text-red-400 uppercase tracking-wider bg-red-500/20 px-2 py-1 rounded-lg">Fora 1 Jogo</span>
+          </div>
+        `;
+      });
+    }
+
+    function renderInjuries() {
+      const t = getCurrentTournament();
+      if (!t) return;
+      if (!t.injuries) t.injuries = [];
+
+      const container = document.getElementById('injuredPlayersList');
+      container.innerHTML = t.injuries.length ? '' : `<p class="text-xs text-slate-500 text-center py-4">Nenhum atleta no DM.</p>`;
+
+      t.injuries.forEach(inj => {
+        const team = t.teams.find(x => x.id === inj.teamId);
+        const player = team ? team.players.find(p => p.id === inj.playerId) : null;
+
+        container.innerHTML += `
+          <div class="flex items-center justify-between p-2 bg-slate-950 border border-slate-800 rounded-xl">
+            <div class="flex items-center gap-2.5">
+              <img src="${player ? player.photo : DEFAULT_PLAYER_PHOTO}" class="w-8 h-8 object-cover rounded-full bg-slate-900 border border-slate-700" onerror="this.src='${DEFAULT_PLAYER_PHOTO}'">
+              <div>
+                <p class="text-xs font-bold text-white">${player ? player.name : 'Atleta'}</p>
+                <p class="text-[10px] text-cyan-400 font-semibold">${inj.desc}</p>
+              </div>
+            </div>
+            <button onclick="removeInjury('${inj.id}')" class="text-[10px] font-bold text-slate-300 bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">Alta</button>
+          </div>
+        `;
+      });
+    }
+
+    function openAddInjuryModal() {
+      const t = getCurrentTournament();
+      if (!t || !t.teams.length) return;
+
+      const teamSelect = document.getElementById('injuryTeamSelect');
+      teamSelect.innerHTML = '';
+      t.teams.forEach(team => {
+        teamSelect.innerHTML += `<option value="${team.id}">${team.name}</option>`;
+      });
+
+      updateInjuryPlayerOptions();
+      openModal('injuryModal');
+    }
+
+    function updateInjuryPlayerOptions() {
+      const teamId = document.getElementById('injuryTeamSelect').value;
+      const playerSelect = document.getElementById('injuryPlayerSelect');
+      playerSelect.innerHTML = '';
+
+      const t = getCurrentTournament();
+      const team = t.teams.find(x => x.id === teamId);
+
+      if (team && team.players && team.players.length) {
+        team.players.forEach(p => {
+          playerSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+        });
+      } else {
+        playerSelect.innerHTML = `<option value="">(Sem atletas)</option>`;
+      }
+    }
+
+    function saveInjury(e) {
+      e.preventDefault();
+      const teamId = document.getElementById('injuryTeamSelect').value;
+      const playerId = document.getElementById('injuryPlayerSelect').value;
+      const desc = document.getElementById('injuryDesc').value.trim();
+      if (!playerId || !desc) return;
+
+      const t = getCurrentTournament();
+      if (!t.injuries) t.injuries = [];
+
+      t.injuries.push({ id: 'inj_' + Date.now(), teamId, playerId, desc });
+      saveDataToStorage();
+      renderInjuries();
+      closeModal('injuryModal');
+    }
+
+    function removeInjury(injuryId) {
+      const t = getCurrentTournament();
+      if (!t || !t.injuries) return;
+      t.injuries = t.injuries.filter(i => i.id !== injuryId);
+      saveDataToStorage();
+      renderInjuries();
+    }
+
+    function previewBadgeUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        activeCropTarget = 'team';
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          cropImg = new Image();
+          cropImg.onload = function() {
+            cropState = { scale: 1, x: 0, y: 0 };
+            document.getElementById('cropZoomSlider').value = 1;
+            drawCropCanvas();
+            openModal('badgeCropModal');
+          };
+          cropImg.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+      }
+    }
+
+    function previewTournamentLogoUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        activeCropTarget = 'tournament';
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          cropImg = new Image();
+          cropImg.onload = function() {
+            cropState = { scale: 1, x: 0, y: 0 };
+            document.getElementById('cropZoomSlider').value = 1;
+            drawCropCanvas();
+            openModal('badgeCropModal');
+          };
+          cropImg.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+      }
+    }
+
+    function previewPlayerPhotoUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        activeCropTarget = 'player';
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          cropImg = new Image();
+          cropImg.onload = function() {
+            cropState = { scale: 1, x: 0, y: 0 };
+            document.getElementById('cropZoomSlider').value = 1;
+            drawCropCanvas();
+            openModal('badgeCropModal');
+          };
+          cropImg.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+      }
+    }
+
+    function initCropEvents() {
+      const area = document.getElementById('cropCanvasArea');
+      const slider = document.getElementById('cropZoomSlider');
+
+      slider.addEventListener('input', (e) => {
+        cropState.scale = parseFloat(e.target.value);
+        document.getElementById('zoomLevelVal').textContent = Math.round(cropState.scale * 100) + '%';
+        drawCropCanvas();
+      });
+
+      const startDrag = (e) => {
+        isDraggingCrop = true;
+        const pos = getClientPos(e);
+        startDragPos = { x: pos.x - cropState.x, y: pos.y - cropState.y };
+      };
+
+      const doDrag = (e) => {
+        if (!isDraggingCrop) return;
+        const pos = getClientPos(e);
+        cropState.x = pos.x - startDragPos.x;
+        cropState.y = pos.y - startDragPos.y;
+        drawCropCanvas();
+      };
+
+      const stopDrag = () => { isDraggingCrop = false; };
+
+      function getClientPos(e) {
+        if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        return { x: e.clientX, y: e.clientY };
+      }
+
+      area.addEventListener('mousedown', startDrag);
+      window.addEventListener('mousemove', doDrag);
+      window.addEventListener('mouseup', stopDrag);
+
+      area.addEventListener('touchstart', startDrag, { passive: true });
+      window.addEventListener('touchmove', doDrag, { passive: true });
+      window.addEventListener('touchend', stopDrag);
+    }
+
+    function drawCropCanvas() {
+      const canvas = document.getElementById('cropCanvas');
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.save();
+      ctx.translate(w / 2 + cropState.x, h / 2 + cropState.y);
+      ctx.scale(cropState.scale, cropState.scale);
+
+      if (cropImg.src) {
+        ctx.drawImage(cropImg, -cropImg.width / 2, -cropImg.height / 2);
+      }
+      ctx.restore();
+    }
+
+    function applyBadgeCrop() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 120; canvas.height = 120;
+      const ctx = canvas.getContext('2d');
+      const srcCanvas = document.getElementById('cropCanvas');
+      ctx.drawImage(srcCanvas, 0, 0, srcCanvas.width, srcCanvas.height, 0, 0, 120, 120);
+
+      const croppedDataUrl = canvas.toDataURL('image/png');
+      if (activeCropTarget === 'tournament') {
+        document.getElementById('regTournamentLogoPreview').src = croppedDataUrl;
+      } else if (activeCropTarget === 'player') {
+        document.getElementById('newPlayerPhotoPreview').src = croppedDataUrl;
+      } else {
+        document.getElementById('teamBadgePreview').src = croppedDataUrl;
+      }
+      closeModal('badgeCropModal');
+    }
+
+    function exportDataJSON() {
+      const json = JSON.stringify(appState, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `futcampeao_backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
+
+    function importDataJSON(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported && Array.isArray(imported.tournaments)) {
+            appState = imported;
+            saveDataToStorage();
+            renderTournamentSelector();
+            renderCurrentTournament();
+            alert('Backup importado com sucesso!');
+          }
+        } catch (err) {
+          alert('Erro ao importar arquivo JSON.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function resetCurrentTournamentData() {
+      const t = getCurrentTournament();
+      if (!t) return;
+      if (confirm(`Zerar jogos e estatísticas do campeonato "${t.name}"?`)) {
+        t.matches = []; t.semis = []; t.final = []; t.injuries = [];
+        saveDataToStorage();
+        renderCurrentTournament();
+      }
+    }
+
+    function confirmDeleteTournament() {
+      const t = getCurrentTournament();
+      if (!t) return;
+      if (confirm(`Excluir a liga "${t.name}"?`)) {
+        appState.tournaments = appState.tournaments.filter(x => x.id !== t.id);
+        if (appState.tournaments.length === 0) createDefaultTournament();
+        else appState.activeTournamentId = appState.tournaments[0].id;
+
+        saveDataToStorage();
+        renderTournamentSelector();
+        renderCurrentTournament();
+      }
+    }
+
+    function openModal(id) {
+      document.getElementById('modalOverlay').classList.remove('hidden');
+      const el = document.getElementById(id);
+      el.classList.add('open');
+    }
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      el.classList.remove('open');
+      setTimeout(() => {
+        const anyOpen = document.querySelectorAll('.bottom-sheet.open').length > 0;
+        if (!anyOpen) document.getElementById('modalOverlay').classList.add('hidden');
+      }, 200);
+    }
+
+    function closeAllModals() {
+      document.querySelectorAll('.bottom-sheet').forEach(el => el.classList.remove('open'));
+      setTimeout(() => document.getElementById('modalOverlay').classList.add('hidden'), 200);
+    }
+  </script>
+</body>
+</html>
